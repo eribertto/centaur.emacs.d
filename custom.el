@@ -4,18 +4,26 @@
 ;;;       Put your own configurations in custom-post.el to override default configurations.
 ;;; Code:
 
+(add-hook 'after-init-hook #'(lambda ()
+                               (interactive)
+                               (require 'server)
+                               (or (server-running-p)
+                                   (server-start))))
+
+(add-to-list 'major-mode-remap-alist '(perl-mode . cperl-mode))
+
 ;; (setq centaur-logo nil)                        ; Logo file or nil (official logo)
 (setq centaur-full-name "Eri Mendz")           ; User full name
 (setq centaur-mail-address "erimendz@gmail.com")   ; Email address
 ;; (setq centaur-proxy "127.0.0.1:7890")          ; HTTP/HTTPS proxy
 ;; (setq centaur-socks-proxy "127.0.0.1:7890")    ; SOCKS proxy
-(setq centaur-server t)                      ; Enable `server-mode' or not: t or nil
-;; (setq centaur-icon nil)                        ; Display icons or not: t or nil
-(setq centaur-package-archives 'bfsu)         ; Package repo: melpa, emacs-cn, bfsu, netease, sjtu, tencent, tuna or ustc
-(setq centaur-theme 'pro)                     ; Color theme: auto, random, system, default, pro, dark, light, warm, cold, day or night
-;; (setq centaur-completion-style 'minibuffer)    ; Completion display style: minibuffer or childframe
-;; (setq centaur-dashboard nil)                   ; Display dashboard at startup or not: t or nil
-;; (setq centaur-lsp 'lsp-mode)                   ; Set LSP client: lsp-mode, eglot or nil
+;; (setq centaur-server t)                      Enable `server-mode' or not: t or nil
+(setq centaur-icon nil)                        ; Display icons or not: t or nil
+(setq centaur-package-archives 'bfsu)         ;; Package repo: melpa, emacs-cn, bfsu, netease, sjtu, tencent, tuna or ustc
+(setq centaur-theme 'cold)                     ;; Color theme: auto, random, system, default, pro, dark, light, warm, cold, day or night
+(setq centaur-completion-style 'minibuffer)    ; Completion display style: minibuffer or childframe
+(setq centaur-dashboard nil)                   ; Display dashboard at startup or not: t or nil
+(setq centaur-lsp 'lsp-mode)                   ; Set LSP client: lsp-mode, eglot or nil
 ;; (setq centaur-lsp-format-on-save t)            ; Auto format buffers on save: t or nil
 ;; (setq centaur-lsp-format-on-save-ignore-modes '(c-mode c++-mode python-mode markdown-mode)) ; Ignore format on save for some languages
 ;; (setq centaur-tree-sitter nil)                 ; Enable tree-sitter or not: t or nil. Only available in 29+.
@@ -121,7 +129,6 @@
  ;; If there is more than one, they won't work right.
  '(column-number-mode t)
  '(size-indication-mode t)
- '(menu-bar-mode t)
  '(tab-bar-mode t)
  '(tool-bar-mode nil))
 
@@ -130,6 +137,6 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:family "UbuntuMono Nerd Font Propo" :foundry "DAMA" :slant normal :weight regular :height 203 :width normal)))))
+ '(default ((t (:family "FiraCode Nerd Font" :foundry "CTDB" :slant normal :weight medium :height 173 :width normal)))))
 
 ;;; custom.el ends here
