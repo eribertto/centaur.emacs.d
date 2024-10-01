@@ -62,6 +62,7 @@
   (add-to-list 'orderless-matching-styles 'completion--regex-pinyin))
 
 (use-package vertico
+  :custom (vertico-count 15)
   :bind (:map vertico-map
          ("RET" . vertico-directory-enter)
          ("DEL" . vertico-directory-delete-char)
@@ -99,6 +100,7 @@
          ("C-c c e" . consult-colors-emacs)
          ("C-c c w" . consult-colors-web)
          ("C-c c f" . describe-face)
+         ("C-c c l" . find-library)
          ("C-c c t" . consult-theme)
 
          ([remap Info-search]        . consult-info)
