@@ -1,6 +1,6 @@
 ;; init-web.el --- Initialize web configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2016-2024 Vincent Zhang
+;; Copyright (C) 2016-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -82,54 +82,26 @@
 (unless (fboundp 'less-css-mode)
   (use-package less-css-mode))
 
-;; JSON
-(unless (fboundp 'js-json-mode)
-  (use-package json-mode))
-
 ;; JavaScript
 (use-package js
   :init (setq js-indent-level 2))
 
-(use-package js2-mode
-  :mode (("\\.js\\'" . js2-mode)
-         ("\\.jsx\\'" . js2-jsx-mode))
-  :interpreter (("node" . js2-mode)
-                ("node" . js2-jsx-mode))
-  :hook ((js2-mode . js2-imenu-extras-mode)
-         (js2-mode . js2-highlight-unused-variables-mode))
-  :config
-  ;; Use default keybindings for lsp
-  (when centaur-lsp
-    (unbind-key "M-." js2-mode-map)))
+;; JSON
+(unless (fboundp 'js-json-mode)
+  (use-package json-mode))
 
 ;; Format HTML, CSS and JavaScript/JSON
 ;; Install: npm -g install prettier
 (when (executable-find "prettier")
   (use-package prettier
     :diminish
-    :hook ((js-mode js2-mode css-mode sgml-mode web-mode) . prettier-mode)
+    :hook ((js-base-mode css-mode sgml-mode web-mode) . prettier-mode)
     :init (setq prettier-pre-warm 'none)))
 
-;; Live browser JavaScript, CSS, and HTML interaction
-(use-package skewer-mode
-  :diminish
-  :functions diminish
-  :hook (((js-mode js2-mode)   . skewer-mode)
-         (css-mode             . skewer-css-mode)
-         ((html-mode web-mode) . skewer-html-mode))
-  :init
-  ;; diminish
-  (with-eval-after-load 'skewer-css
-    (diminish 'skewer-css-mode))
-  (with-eval-after-load 'skewer-html
-    (diminish 'skewer-html-mode)))
-
-(use-package typescript-mode
-  :mode ("\\.ts[x]\\'" . typescript-mode))
-
-;; Run Mocha or Jasmine tests
-(use-package mocha
-  :config (use-package mocha-snippets))
+;; Typescript
+(unless (and (centaur-treesit-available-p)
+             (fboundp 'typescript-ts-mode))
+  (use-package typescript-mode))
 
 ;; Major mode for CoffeeScript code
 (use-package coffee-mode
@@ -145,7 +117,7 @@
 
 ;; Adds node_modules/.bin directory to `exec_path'
 (use-package add-node-modules-path
-  :hook ((web-mode js-mode js2-mode) . add-node-modules-path))
+  :hook ((web-mode js-base-mode) . add-node-modules-path))
 
 (use-package haml-mode)
 (use-package php-mode)

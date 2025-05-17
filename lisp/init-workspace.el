@@ -1,6 +1,6 @@
 ;;; init-workspace.el --- Initialize workspace configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2024 Vincent Zhang
+;; Copyright (C) 2018-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -30,8 +30,11 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'init-custom))
+
 (use-package tabspaces
-  :hook (after-init . tabspaces-mode)
+  :hook (after-init . (lambda() (unless centaur-dashboard (tabspaces-mode t))))
   :custom
   (tab-bar-show nil)
 
@@ -41,8 +44,8 @@
   (tabspaces-include-buffers '("*scratch*" "*Messages*"))
   ;; sessions
   (tabspaces-session t)
-  (tabspaces-session-auto-restore t)
-  :init
+  (tabspaces-session-auto-restore (not centaur-dashboard))
+  :config
   ;; Filter Buffers for Consult-Buffer
   (with-eval-after-load 'consult
     ;; hide full buffer list (still available with "b" prefix)
@@ -60,7 +63,12 @@
                              :sort 'visibility
                              :as #'buffer-name)))
       "Set workspace buffer list for consult-buffer.")
-    (add-to-list 'consult-buffer-sources 'consult--source-workspace)))
+    (add-to-list 'consult-buffer-sources 'consult--source-workspace))
+
+  (defun my-tabspaces-burry-window (&rest _)
+    "Burry *Messages* buffer"
+    (quit-windows-on messages-buffer-name))
+  (advice-add #'tabspaces-restore-session :after #'my-tabspaces-burry-window))
 
 
 (provide 'init-workspace)

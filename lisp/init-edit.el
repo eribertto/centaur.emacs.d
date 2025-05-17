@@ -1,6 +1,6 @@
 ;; init-edit.el --- Initialize editing configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2006-2024 Vincent Zhang
+;; Copyright (C) 2006-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -254,7 +254,7 @@
              (node-end (treesit-node-end node)))
         ;; Node fits the region exactly. Try its parent node instead.
         (when (and (= (region-beginning) node-start) (= (region-end) node-end))
-          (when-let ((node (treesit-node-parent node)))
+          (when-let* ((node (treesit-node-parent node)))
             (setq node-start (treesit-node-start node)
                   node-end (treesit-node-end node))))
         (set-mark node-end)
@@ -327,17 +327,9 @@
          ([remap move-end-of-line] . mwim-end)))
 
 ;; Treat undo history as a tree
-(if emacs/>=28p
-    (use-package vundo
-      :bind ("C-x u" . vundo)
-      :config (setq vundo-glyph-alist vundo-unicode-symbols))
-  (use-package undo-tree
-    :diminish
-    :hook (after-init . global-undo-tree-mode)
-    :init (setq undo-tree-visualizer-timestamps t
-                undo-tree-visualizer-diff t
-                undo-tree-enable-undo-in-region nil
-                undo-tree-auto-save-history nil)))
+(use-package vundo
+  :bind ("C-x u" . vundo)
+  :config (setq vundo-glyph-alist vundo-unicode-symbols))
 
 ;; Goto last change
 (use-package goto-chg

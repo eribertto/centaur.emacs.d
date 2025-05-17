@@ -1,6 +1,6 @@
 ;; init-highlight.el --- Initialize highlighting configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2006-2024 Vincent Zhang
+;; Copyright (C) 2006-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -43,12 +43,18 @@
 ;; Highlight matching parens
 (use-package paren
   :ensure nil
+  :custom-face
+  (show-paren-match ((((class color) (background light))
+                      (:box (:line-width (-1 . -1) :color "gray70")))
+                     (((class color) (background dark))
+                      (:box (:line-width (-1 . -1) :color "gray50")))))
   :hook (after-init . show-paren-mode)
   :init (setq show-paren-when-point-inside-paren t
               show-paren-when-point-in-periphery t)
   :config
   (if emacs/>=29p
-      (setq show-paren-context-when-offscreen
+      (setq blink-matching-paren-highlight-offscreen t
+            show-paren-context-when-offscreen
             (if (childframe-workable-p) 'child-frame 'overlay))
     (with-no-warnings
       ;; Display matching line for off-screen paren.
@@ -108,17 +114,18 @@ FACE defaults to inheriting from default and highlight."
   (symbol-overlay-face-6 ((t (:inherit nerd-icons-orange :background unspecified :foreground unspecified :inverse-video t))))
   (symbol-overlay-face-7 ((t (:inherit nerd-icons-green :background unspecified :foreground unspecified :inverse-video t))))
   (symbol-overlay-face-8 ((t (:inherit nerd-icons-cyan :background unspecified :foreground unspecified :inverse-video t))))
-  :bind (("M-i" . symbol-overlay-put)
+  :bind (:map symbol-overlay-mode-map
+         ("M-i" . symbol-overlay-put)
          ("M-n" . symbol-overlay-jump-next)
          ("M-p" . symbol-overlay-jump-prev)
          ("M-N" . symbol-overlay-switch-forward)
          ("M-P" . symbol-overlay-switch-backward)
          ("M-C" . symbol-overlay-remove-all)
          ([M-f3] . symbol-overlay-remove-all))
-  :hook (((prog-mode yaml-mode) . symbol-overlay-mode)
+  :hook (((prog-mode yaml-mode yaml-ts-mode) . symbol-overlay-mode)
          (iedit-mode            . turn-off-symbol-overlay)
          (iedit-mode-end        . turn-on-symbol-overlay))
-  :init (setq symbol-overlay-idle-time 0.1)
+  :init (setq symbol-overlay-idle-time 0.3)
   :config
   (with-no-warnings
     ;; Disable symbol highlighting while selecting
@@ -126,18 +133,30 @@ FACE defaults to inheriting from default and highlight."
       "Turn off symbol highlighting."
       (interactive)
       (symbol-overlay-mode -1))
-    (advice-add #'set-mark :after #'turn-off-symbol-overlay)
 
     (defun turn-on-symbol-overlay (&rest _)
       "Turn on symbol highlighting."
       (interactive)
-      (when (derived-mode-p 'prog-mode 'yaml-mode)
+      (when (derived-mode-p 'prog-mode 'yaml-mode 'yaml-ts-mode)
         (symbol-overlay-mode 1)))
-    (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)))
+
+    (advice-add #'activate-mark :after #'turn-off-symbol-overlay)
+    (advice-add #'deactivate-mark :after #'turn-on-symbol-overlay)
+    (advice-add #'easy-kill :after #'turn-off-symbol-overlay)
+    (advice-add #'easy-kill-destroy-candidate :after #'turn-on-symbol-overlay)))
+
+;; Mark occurrences of current region (selection)
+(use-package region-occurrences-highlighter
+  :diminish
+  :bind (:map region-occurrences-highlighter-nav-mode-map
+         ("M-n" . region-occurrences-highlighter-next)
+         ("M-p" . region-occurrences-highlighter-prev))
+  :hook (after-init . global-region-occurrences-highlighter-mode))
 
 ;; Highlight indentions
 (use-package indent-bars
   :custom
+  (indent-bars-color '(highlight :face-bg t :blend 0.225))
   (indent-bars-treesit-support centaur-tree-sitter)
   (indent-bars-no-descend-string t)
   (indent-bars-treesit-ignore-blank-lines-types '("module"))
@@ -148,39 +167,12 @@ FACE defaults to inheriting from default and highlight."
   :config (require 'indent-bars-ts))
 
 ;; Colorize color names in buffers
-(if emacs/>=28p
-    (use-package colorful-mode
-      :diminish
-      :hook (after-init . global-colorful-mode)
-      :init (setq colorful-use-prefix t
-                  colorful-prefix-string "⬤")
-      :config (dolist (mode '(html-mode php-mode help-mode helpful-mode))
-                (add-to-list 'global-colorful-modes mode)))
-  (use-package rainbow-mode
-    :diminish
-    :defines helpful-mode-map
-    :bind (:map help-mode-map
-           ("w" . rainbow-mode))
-    :hook ((mhtml-mode html-mode html-ts-mode php-mode latex-mode help-mode helpful-mode) . rainbow-mode)
-    :init (with-eval-after-load 'helpful
-            (bind-key "w" #'rainbow-mode helpful-mode-map))
-    :config
-    (with-no-warnings
-      ;; HACK: Use overlay instead of text properties to override `hl-line' faces.
-      ;; @see https://emacs.stackexchange.com/questions/36420
-      (defun my-rainbow-colorize-match (color &optional match)
-        (let* ((match (or match 0))
-               (ov (make-overlay (match-beginning match) (match-end match))))
-          (overlay-put ov 'ovrainbow t)
-          (overlay-put ov 'face `((:foreground ,(if (> 0.5 (rainbow-x-color-luminance color))
-                                                    "white" "black"))
-                                  (:background ,color)))))
-      (advice-add #'rainbow-colorize-match :override #'my-rainbow-colorize-match)
-
-      (defun my-rainbow-clear-overlays ()
-        "Clear all rainbow overlays."
-        (remove-overlays (point-min) (point-max) 'ovrainbow t))
-      (advice-add #'rainbow-turn-off :after #'my-rainbow-clear-overlays))))
+(use-package colorful-mode
+  :diminish
+  :hook (after-init . global-colorful-mode)
+  :init (setq colorful-use-prefix t)
+  :config (dolist (mode '(html-mode php-mode help-mode helpful-mode))
+            (add-to-list 'global-colorful-modes mode)))
 
 ;; Highlight brackets according to their depth
 (use-package rainbow-delimiters

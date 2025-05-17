@@ -1,6 +1,6 @@
 ;; init-prog.el --- Initialize programming configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2006-2024 Vincent Zhang
+;; Copyright (C) 2006-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -34,8 +34,11 @@
   (require 'init-const)
   (require 'init-custom))
 
-;; Prettify Symbols
-;; e.g. display “lambda” as “λ”
+;; ---------------------------------------------------------------------------
+;; Code Display & Utilities
+;; ---------------------------------------------------------------------------
+
+;; Prettify Symbols (e.g., display “lambda” as “λ”)
 (use-package prog-mode
   :ensure nil
   :hook (prog-mode . prettify-symbols-mode)
@@ -45,9 +48,16 @@
 
 ;; Tree-sitter support
 (when (centaur-treesit-available-p)
+  ;; Automatic Tree-sitter grammar management
   (use-package treesit-auto
     :hook (after-init . global-treesit-auto-mode)
-    :init (setq treesit-auto-install 'prompt)))
+    :init (setq treesit-auto-install 'prompt))
+
+  ;; Code folding indicators using Tree-sitter
+  (use-package treesit-fold-indicators
+    :ensure treesit-fold
+    :hook (after-init . global-treesit-fold-indicators-mode)
+    :init (setq treesit-fold-indicators-priority -1)))
 
 ;; Show function arglist or variable docstring
 (use-package eldoc
@@ -98,25 +108,6 @@
   (setq xref-show-definitions-function #'xref-show-definitions-completing-read
         xref-show-xrefs-function #'xref-show-definitions-completing-read))
 
-;; Jump to definition
-(use-package dumb-jump
-  :pretty-hydra
-  ((:title (pretty-hydra-title "Dump Jump" 'faicon "nf-fa-anchor")
-    :color blue :quit-key ("q" "C-g"))
-   ("Jump"
-    (("j" dumb-jump-go "Go")
-     ("o" dumb-jump-go-other-window "Go other window")
-     ("e" dumb-jump-go-prefer-external "Go external")
-     ("x" dumb-jump-go-prefer-external-other-window "Go external other window"))
-    "Other"
-    (("i" dumb-jump-go-prompt "Prompt")
-     ("l" dumb-jump-quick-look "Quick look")
-     ("b" dumb-jump-back "Back"))))
-  :bind (("C-M-j" . dumb-jump-hydra/body))
-  :init
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
-  (setq dumb-jump-selector 'completing-read))
-
 ;; Code styles
 (use-package editorconfig
   :diminish
@@ -145,7 +136,6 @@
       (html-mode       . ("html"))
       (julia-mode      . ("julia~1.8"))
       (js-mode         . ("javascript" "jquery"))
-      (js2-mode        . ("javascript" "jquery"))
       (emacs-lisp-mode . ("elisp")))
     "Alist of major-mode and docs.")
 
@@ -180,7 +170,9 @@ Install the doc if it's not installed."
     ;; Lookup the symbol at point
     (devdocs-lookup nil (thing-at-point 'symbol t))))
 
-;; Misc. programming modes
+;; ---------------------------------------------------------------------------
+;; Miscellaneous Programming Modes
+;; ---------------------------------------------------------------------------
 (use-package csv-mode)
 (unless emacs/>=29p
   (use-package csharp-mode))
@@ -197,20 +189,23 @@ Install the doc if it's not installed."
 (use-package vimrc-mode)
 (use-package yaml-mode)
 
+;; Protobuf mode configuration
 (use-package protobuf-mode
   :hook (protobuf-mode . (lambda ()
+                           "Set up Protobuf's imenu generic expressions."
                            (setq imenu-generic-expression
                                  '((nil "^[[:space:]]*\\(message\\|service\\|enum\\)[[:space:]]+\\([[:alnum:]]+\\)" 2))))))
 
+;; nXML mode for special file types
 (use-package nxml-mode
   :ensure nil
-  :mode (("\\.xaml$" . xml-mode)))
+  :mode (("\\.xaml\\'" . xml-mode)))
 
-;; Fish shell
+;; Fish shell mode and auto-formatting
 (use-package fish-mode
   :hook (fish-mode . (lambda ()
-                       (add-hook 'before-save-hook
-                                 #'fish_indent-before-save))))
+                       "Integrate `fish_indent` formatting with Fish shell mode."
+                       (add-hook 'before-save-hook #'fish_indent-before-save))))
 
 (provide 'init-prog)
 

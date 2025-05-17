@@ -1,6 +1,6 @@
 ;; init-base.el --- Better default configurations.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2006-2024 Vincent Zhang
+;; Copyright (C) 2006-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -157,7 +157,7 @@
   :init
   (setq column-number-mode t
         line-number-mode t
-        ;; kill-whole-line t               ; Kill line including '\n'
+        kill-whole-line t               ; Kill line including '\n'
         line-move-visual nil
         track-eol t                     ; Keep cursor at end of lines. Require line-move-visual is nil.
         set-mark-command-repeat-pop t)  ; Repeating C-SPC after popping mark pops it again
@@ -173,7 +173,7 @@
   (with-no-warnings
     (defun my-list-processes--prettify ()
       "Prettify process list."
-      (when-let ((entries tabulated-list-entries))
+      (when-let* ((entries tabulated-list-entries))
         (setq tabulated-list-entries nil)
         (dolist (p (process-list))
           (when-let* ((val (cadr (assoc p entries)))
@@ -215,10 +215,20 @@
       sentence-end-double-space nil
       word-wrap-by-category t)
 
+;; Async
+(use-package async
+  :functions (async-bytecomp-package-mode dired-async-mode)
+  :init
+  (async-bytecomp-package-mode 1)
+  (dired-async-mode 1))
+
 ;; Frame
 (when (display-graphic-p)
+  ;; Frame maximized on startup
+  (when centaur-frame-maximized-on-startup
+    (add-hook 'window-setup-hook #'centaur-frame-maximize))
+
   ;; Frame fullscreen
-  (add-hook 'window-setup-hook #'fix-fullscreen-cocoa)
   (bind-key "S-s-<return>" #'toggle-frame-fullscreen)
   (and sys/mac-x-p (bind-key "C-s-f" #'toggle-frame-fullscreen))
 
@@ -239,6 +249,30 @@
     :init
     (when sys/linux-x-p
       (setq transwin-parameter-alpha 'alpha-background))))
+
+;; Child frame
+(use-package posframe
+  :hook (after-load-theme . posframe-delete-all)
+  :init
+  (defface posframe-border
+    `((t (:inherit region)))
+    "Face used by the `posframe' border."
+    :group 'posframe)
+  (defvar posframe-border-width 2
+    "Default posframe border width.")
+  :config
+  (with-no-warnings
+    (defun my-posframe--prettify-frame (&rest _)
+      (set-face-background 'fringe nil posframe--frame))
+    (advice-add #'posframe--create-posframe :after #'my-posframe--prettify-frame)
+
+    (defun posframe-poshandler-frame-center-near-bottom (info)
+      (cons (/ (- (plist-get info :parent-frame-width)
+                  (plist-get info :posframe-width))
+               2)
+            (/ (+ (plist-get info :parent-frame-height)
+                  (* 2 (plist-get info :font-height)))
+               2)))))
 
 ;; Global keybindings
 (bind-keys ("s-r"     . revert-this-buffer)

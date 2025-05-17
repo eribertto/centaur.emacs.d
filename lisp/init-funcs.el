@@ -1,6 +1,6 @@
 ;; init-funcs.el --- Define functions.	-*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2024 Vincent Zhang
+;; Copyright (C) 2018-2025 Vincent Zhang
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; URL: https://github.com/seagle0128/.emacs.d
@@ -157,21 +157,27 @@ Same as '`replace-string' `C-q' `C-m' `RET' `RET''."
     (thing-at-point 'symbol t)))
 
 ;; Browse URL
+(defun xwidget-workable-p ()
+  "Check whether xwidget is available."
+  (and (display-graphic-p)
+       (featurep 'xwidget-internal)))
+
 (defun centaur-browse-url (url)
   "Open URL using a configurable method.
 See `browse-url' for more details."
   (interactive (progn
                  (require 'browse-url)
                  (browse-url-interactive-arg "URL: ")))
-  (if (and (featurep 'xwidget-internal) (display-graphic-p))
+  (if (xwidget-workable-p)
       (centaur-webkit-browse-url url t)
     (browse-url url)))
 
 (defun centaur-webkit-browse-url (url &optional pop-buffer new-session)
   "Browse URL with xwidget-webkit' and switch or pop to the buffer.
-  POP-BUFFER specifies whether to pop to the buffer.
-  NEW-SESSION specifies whether to create a new xwidget-webkit session.
-  Interactively, URL defaults to the string looking like a url around point."
+
+POP-BUFFER specifies whether to pop to the buffer.
+NEW-SESSION specifies whether to create a new xwidget-webkit session.
+Interactively, URL defaults to the string looking like a url around point."
   (interactive (progn
                  (require 'browse-url)
                  (browse-url-interactive-arg "URL: ")))
@@ -255,7 +261,8 @@ See `browse-url' for more details."
 
 (defun centaur-treesit-available-p ()
   "Check whether tree-sitter is available.
-  Native tree-sitter is introduced since 29.1."
+
+Native tree-sitter is introduced since 29.1."
   (and centaur-tree-sitter
        (fboundp 'treesit-available-p)
        (treesit-available-p)))
@@ -360,8 +367,6 @@ Return the fastest package archive."
   (eval-expression
    (minibuffer-with-setup-hook
        (lambda ()
-         (add-function :before-until (local 'eldoc-documentation-function)
-           #'elisp-eldoc-documentation-function)
          (run-hooks 'eval-expression-minibuffer-setup-hook)
          (goto-char (minibuffer-prompt-end))
          (forward-char (length (format "(setq %S " sym))))
@@ -378,15 +383,6 @@ Return the fastest package archive."
          sym sym-value))
       read-expression-map t
       'read-expression-history))))
-
-;; WORKAROUND: fix blank screen issue on macOS.
-(defun fix-fullscreen-cocoa ()
-  "Address blank screen issue with child-frame in fullscreen.
-This issue has been addressed in 28."
-  (and sys/mac-cocoa-p
-       (not emacs/>=28p)
-       (bound-and-true-p ns-use-native-fullscreen)
-       (setq ns-use-native-fullscreen nil)))
 
 
 
@@ -474,9 +470,12 @@ This issue has been addressed in 28."
 
 (defun childframe-workable-p ()
   "Whether childframe is workable."
-  (not (or noninteractive
-           emacs-basic-display
-           (not (display-graphic-p)))))
+  (and (>= emacs-major-version 26)
+       (not noninteractive)
+       (not emacs-basic-display)
+       (or (display-graphic-p)
+           (featurep 'tty-child-frames))
+       (eq (frame-parameter (selected-frame) 'minibuffer) 't)))
 
 (defun childframe-completion-workable-p ()
   "Whether childframe completion is workable."
@@ -504,7 +503,7 @@ This issue has been addressed in 28."
 
 (defun centaur--load-theme (theme)
   "Disable others and enable new THEME."
-  (when-let ((theme (centaur--theme-name theme)))
+  (when-let* ((theme (centaur--theme-name theme)))
     (mapc #'disable-theme custom-enabled-themes)
     (load-theme theme t)))
 
@@ -556,8 +555,8 @@ This issue has been addressed in 28."
        :diminish
        :commands auto-dark-mode
        :init
-       (setq auto-dark-light-theme (alist-get 'light centaur-system-themes)
-             auto-dark-dark-theme (alist-get 'dark centaur-system-themes))
+       (setq auto-dark-themes `((,(alist-get 'dark centaur-system-themes))
+                                (,(alist-get 'light centaur-system-themes))))
        (when (and sys/macp (not (display-graphic-p)))
          (setq auto-dark-detection-method 'osascript))
        (auto-dark-mode 1)))
